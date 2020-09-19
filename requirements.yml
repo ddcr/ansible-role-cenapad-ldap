@@ -1,0 +1,3 @@
+# download OpenLDAP role from folks at CSC finland
+- src: https://github.com/CSCfi/ansible-role-openldap
+  version: master

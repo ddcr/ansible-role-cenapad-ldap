@@ -1,0 +1,30 @@
+---
+galaxy_info:
+  author: Domingos Rodrigues
+  description: Configures an OpenLDAP server for the LCC-CENAPAD organization
+  company: LCC-CENAPAD/MG
+  license: 3-clause BSD license.
+  min_ansible_version: 2.4
+  platforms:
+    - name: EL
+      versions:
+      - 7
+  galaxy_tags:
+    #- cloud
+    #- cloud:ec2
+    #- cloud:gce
+    #- cloud:rax
+    #- clustering
+    #- database
+    #- database:nosql
+    #- database:sql
+    #- development
+    #- monitoring
+    #- networking
+    #- packaging
+    - system
+    #- web
+
+
+
+dependencies: []

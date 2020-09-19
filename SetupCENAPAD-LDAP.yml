@@ -1,0 +1,83 @@
+# ansible-configured
+---
+#
+# Playbook to install/configure local LDAP 
+#
+#
+# Add firewall rules for LDAP
+# iptables -A INPUT -p tcp -m tcp --dport 389 -j ACCEPT
+# iptables -A INPUT -p tcp -m tcp --dport 636 -j ACCEPT
+#
+- hosts: container
+  connection: docker
+  vars:
+    repos_lcc:
+        - repo: "rocks-centos7-os-lcc"
+          desc: "Rocks-7 OS - Base (LCC/CENAPAD)"
+          baseurl: "http://150.164.66.69/cblr/repo_mirror/rocks-os"
+        - repo: "rocks-centos7-os-lcc-updates"
+          desc: "Rocks-7 OS - Updates (LCC/CENAPAD)"
+          baseurl: "http://150.164.66.69/cblr/repo_mirror/rocks-os-updates"
+        - repo: "centos78-lcc"
+          desc: "CentOS 7.8 - Everything (LCC/CENAPAD)"
+          baseurl: "http://150.164.66.69/cblr/links/centos78-x86_64"
+    repos_laptop:
+        - repo: "rocks-centos7-os-laptop"
+          desc: "Rocks-7 OS - Base (laptop)"
+          baseurl: "file:///data2/rockscluster/CentOS-7.4.1708/base"
+        - repo: "rocks-centos7-os-laptop-updates"
+          desc: "Rocks-7 OS - Updates (laptop)"
+          baseurl: "file:///data2/rockscluster/CentOS-7.4.1708/updates/RedHat"
+    use_repos:
+      - centos78-lcc
+
+  pre_tasks:
+    - name: Add repositories from LCC/CENAPAD repository server
+      yum_repository:
+        name: "{{ item.repo }}"
+        description: "{{ item.desc }}"
+        baseurl: "{{ item.baseurl }}"
+        gpgcheck: no
+        file: lcc_repos
+      register: lcc_repos_res
+      with_items:
+        - "{{ repos_lcc }}"
+      tags:
+        - setlocalyum
+
+    - name: Add repositories from local repository server (not enabled)
+      yum_repository:
+        name: "{{ item.repo }}"
+        description: "{{ item.desc }}"
+        baseurl: "{{ item.baseurl }}"
+        gpgcheck: no
+        enabled: no
+        file: laptop_repos
+      register: laptop_repos_res
+      with_items:
+        - "{{ repos_laptop }}"
+      tags:
+        - setlocalyum
+
+    - block:
+      - name: yum-clean-metadata-task
+        command: yum clean all
+        args:
+          warn: no
+        when: ansible_os_family == "RedHat"
+
+      - name: yum-makecache-task
+        command: yum makecache fast
+        args:
+          warn: no
+        when: ansible_os_family == "RedHat"
+      when: lcc_repos_res.changed or laptop_repos_res.changed
+      tags:
+        - setlocalyum
+
+  tasks:
+    - include_role:
+        name: ansible-role-openldap-lcc-cenapad
+      vars:
+        openldap_repos: "{{ use_repos }}"
+      tags: always

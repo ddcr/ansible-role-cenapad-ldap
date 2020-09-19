@@ -1,0 +1,20 @@
+---
+# default variables
+
+openldap_directory: "/openldap"
+openldap_repos:
+  - centos78-lcc
+  - rocks-centos7-os-lcc
+  - rocks-centos7-os-lcc-updates
+openldap_rpm_pkgs:
+  - openldap
+  - compat-openldap
+  - openldap-clients
+  - openldap-servers
+  - openldap-servers-sql
+  - unixODBC
+  - cyrus-sasl-devel
+  - openldap-devel
+# Need to change this
+openldap_server_rootpw: veredas
+openldap_server_password_hash: "{SSHA}"

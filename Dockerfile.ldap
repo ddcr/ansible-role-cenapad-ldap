@@ -1,0 +1,17 @@
+FROM centos/systemd
+LABEL maintainer="Domingos Rodrigues <ddcr@lcc.ufmg.br>"
+
+COPY *_repos.repo /etc/yum.repos.d/
+
+# install LDAP rpms
+RUN yum update --disablerepo='*' --enablerepo='centos78-lcc' -y \
+    && yum makecache fast \
+    && yum install --disablerepo='*' --enablerepo='centos78-lcc' -y \
+    openldap compat-openldap openldap-clients \
+    openldap-servers openldap-servers-sql \
+    unixODBC cyrus-sasl-devel openldap-devel \
+    && yum clean all \
+    && systemctl enable slapd.service
+
+EXPOSE 389 636
+CMD ["/usr/lib/systemd/systemd"]

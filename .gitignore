@@ -1,0 +1,19 @@
+*.retry
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/
+
+*.py[cod]
+*$py.class
+
+distributions/
+material/
+roles/ansible-role-openldap/
+roles/open-ldap-installation/

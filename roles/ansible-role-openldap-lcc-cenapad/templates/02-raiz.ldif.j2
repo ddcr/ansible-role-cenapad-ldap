@@ -1,0 +1,11 @@
+dn: {{ DOMINIO_LDAP }}
+dc: {{ DC }}
+objectClass: dcObject
+objectClass: organization
+objectClass: top
+o: {{ ORGANIZACAO }}
+description: {{ DESCRICAO }}
+
+dn: ou=people,{{ DOMINIO_LDAP }}
+objectClass: organizationalUnit
+ou: people

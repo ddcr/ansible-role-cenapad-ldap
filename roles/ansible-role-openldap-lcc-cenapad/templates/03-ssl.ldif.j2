@@ -1,0 +1,30 @@
+# 
+#
+dn: cn=config
+changetype: modify
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: /etc/openldap/certs/{{ DOMINIO }}.crt
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: /etc/openldap/certs/{{ DOMINIO }}.key
+-
+{#
+if [ "${VAR_USAR_CERT}" == 1 ]; then ########################
+
+cp "${CERT_ROOT_CA}" /etc/openldap/certs/${DOMINIO}.pem
+cp "${CERT_CRT}" /etc/openldap/certs/${DOMINIO}.crt
+cp "${CERT_KEY}" /etc/openldap/certs/${DOMINIO}.key
+
+cat >> 03-ssl.ldif <<_EOF_
+-
+replace: olcTLSCACertificateFile
+olcTLSCACertificateFile: /etc/openldap/certs/${DOMINIO}.pem
+_EOF_
+
+else ########################################################
+
+openssl req -new -x509 -nodes -out /etc/openldap/certs/${DOMINIO}.crt -keyout /etc/openldap/certs/${DOMINIO}.key -days 3650 -subj "/C=BR/ST=${UF}/L=${CIDADE}/O=${DESCRICAO}/CN=${DOMINIO}"
+
+fi ##########################################################
+
+#}

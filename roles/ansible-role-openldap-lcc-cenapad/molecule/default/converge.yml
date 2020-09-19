@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include ansible-role-openldap-lcc-cenapad"
+      include_role:
+        name: "ansible-role-openldap-lcc-cenapad"

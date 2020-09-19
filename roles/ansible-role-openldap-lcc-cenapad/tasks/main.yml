@@ -1,0 +1,48 @@
+---
+
+- block:
+  - name: Create LDAP base directory
+    file:
+      path: "{{ openldap_directory }}"
+      state: directory
+      mode: 0755
+
+  - name: Create LDAP data directory
+    file:
+      path: "{{ openldap_directory }}/data"
+      state: directory
+      mode: 0755
+
+  - name: Create LDAP log directory
+    file:
+      path: "{{ openldap_directory }}/logs"
+      state: directory
+      mode: 0755
+
+  - name: Create LDAP LDIFs directory
+    file:
+      path: "{{ openldap_directory }}/ldifs"
+      state: directory
+      mode: 0755
+
+  - name: Create LDAP LDIFs directory
+    file:
+      path: "{{ openldap_directory }}/pkgs"
+      state: directory
+      mode: 0755
+  tags: createopenldapdir
+
+- name: Install OpenLDAP packages on RedHat
+  yum:
+    name: "{{ openldap_rpm_pkgs }}"
+    state: present
+    disablerepo: "*"
+    enablerepo: "{{ openldap_repos }}"
+  notify: restart slapd
+  tags:
+    - openldapinitialinstall
+  when: ansible_os_family == "RedHat"
+
+- include: redhat.yml
+  when: ansible_os_family == "RedHat"
+  tags: openldapstep2
