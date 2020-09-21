@@ -3,5 +3,5 @@ veredas-ldap-container ansible_connection=docker
 [container]
 veredas-ldap-container ansible_connection=docker
 
-[lcclab]
-150.164.66.69 ansible_connection=ssh ansible_user=ddcr
+# [lcclab]
+# 150.164.66.69 ansible_connection=ssh ansible_user=ddcr
