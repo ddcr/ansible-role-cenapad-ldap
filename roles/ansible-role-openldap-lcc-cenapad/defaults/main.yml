@@ -2,6 +2,8 @@
 # default variables
 
 openldap_directory: "/openldap"
+openldap_server_directory: /var/lib/ldap
+openldap_dir_certs: /etc/openldap/certs
 openldap_repos:
   - centos78-lcc
   - rocks-centos7-os-lcc
@@ -15,6 +17,72 @@ openldap_rpm_pkgs:
   - unixODBC
   - cyrus-sasl-devel
   - openldap-devel
-# Need to change this
-openldap_server_rootpw: veredas
-openldap_server_password_hash: "{SSHA}"
+  - python-ldap
+  - openssl
+  - python2-cryptography
+  - pyOpenSSL
+#
+openldap_domain: "dc=ufmg,dc=br"
+server_domain: "lcc.ufmg.br"
+openldap_password_hash: "{SSHA}"
+#
+openldap_manager: ldapadm
+openldap_admin_user: admin
+openldap_rootpw: veredas_lcc
+openldap_shib_user: leitor-shib
+openldap_shibpw: veredas_shib
+
+# /etc/sysconfig/slapd:   defines the default ports 
+# for LDAP, LDAPS (secured LDAP) and LDAPI
+# (Interconnect = Unix Sockect)
+openldap_slapd_file: /etc/sysconfig/slapd
+openldap_default_services: ldapi:/// ldap://127.0.0.1 ldaps:///
+openldap_default_options: ""
+# size of 2MB
+openldap_dbconfig_set_cachesize: 2097152
+openldap_schemas:
+  - cosine
+  - nis
+  - inetorgperson
+  - eduperson
+  - breduperson
+  - schac-20061212-1
+  - samba
+
+# Overlay attributes
+openldap_overlays:
+  - name: smbk5pwd
+    objectClass:
+      - olcOverlayConfig
+      - olcSmbK5PwdConfig
+      - olcConfig
+      - top
+    attributes:
+      olcOverlay: smbk5pwd
+      olcSmbK5PwdEnable: samba
+  - name: memberof
+    objectClass:
+      - olcOverlayConfig
+      - olcMemberOf
+      - olcConfig
+      - top
+    attributes:
+      olcOverlay: memberof
+      olcMemberOfDangling: ignore
+      olcMemberOfRefInt: 'TRUE'
+      olcMemberOfGroupOC: groupOfNames
+      olcMemberOfMemberAD: member
+      olcMemberOfMemberOfAD: memberOf
+  - name: refint
+    objectClass:
+      - olcOverlayConfig
+      - olcRefintConfig
+      - olcConfig
+      - top
+    attributes:
+      olcOverlay: refint
+      olcRefintAttribute: 
+        - memberof
+        - member
+        - manager
+        - owner

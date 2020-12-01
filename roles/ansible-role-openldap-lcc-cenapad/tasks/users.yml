@@ -1,0 +1,38 @@
+---
+- name: Add LDAP user administrator
+  community.general.ldap_entry:
+    dn: "cn={{ openldap_admin_user }}, {{ openldap_domain }}"
+    objectClass:
+      - simpleSecurityObject
+      - organizationalRole
+    attributes:
+      cn: "{{ openldap_admin_user }}"
+      description: "Administrador da base LDAP"
+      userPassword: "{{ rootpwgenerated.stdout }}"
+    bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"
+
+- name: Add Shibboleth (IdP) user reader
+  community.general.ldap_entry:
+    dn: "cn={{ openldap_shib_user }}, {{ openldap_domain }}"
+    objectClass:
+      - simpleSecurityObject
+      - organizationalRole
+    attributes:
+      cn: "{{ openldap_shib_user }}"
+      description: "Administrador da base LDAP"
+      userPassword: "{{ shibpwgenerated.stdout }}"
+    bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"
+
+- name: "Create for now the groups: {{ openldap_groups | join(',') }}"
+  community.general.ldap_entry:
+    dn: "cn=leitor-shib, {{ openldap_domain }}"
+    objectClass:
+      - groupofnames
+      - top
+    attributes:
+      cn: leitor-shib
+      member: 
+    bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"

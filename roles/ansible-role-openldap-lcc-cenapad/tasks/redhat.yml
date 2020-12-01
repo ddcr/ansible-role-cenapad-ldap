@@ -13,12 +13,155 @@
     - ansible_facts.services["firewalld.service"]["status"] == "enabled"
     - ansible_facts.services["slapd.service"]["status"] == "enabled"
 
-- name: "Set the Open LDAP Server password"
-  command: slappasswd -h {{ openldap_server_password_hash }} -s {{ openldap_server_rootpw }}
+- name: Set the Open LDAP Server password
+  command: slappasswd -h {{ openldap_password_hash }} -s {{ openldap_rootpw }}
   register: rootpwgenerated
-  tags:
-    - changeopenldappasswd
-    - openldapstep2
+
+- name: Set password for Shibboleth queries
+  command: slappasswd -h {{ openldap_password_hash }} -s {{ openldap_shibpw }}
+  register: shibpwgenerated
 
 - debug:
     var: rootpwgenerated
+
+- debug:
+    var: shibpwgenerated
+
+- name: Create OpenLDAP server configuration
+  template:
+    src: slapd_sysconfig.j2
+    dest: "{{ openldap_slapd_file }}"
+    owner: root
+    group: root
+    mode: 0644
+    backup: True
+  notify: restart slapd
+
+- name: Ensure OpenLDAP service is started and enabled on boot
+  service: name=slapd state=started enabled=yes
+
+#
+# Should consider using mdb (Memory-Mapped DB backend) backend?
+
+# - name: Create OpenLDAP DB_CONFIG
+#   template: >
+#     src=DB_CONFIG.j2
+#     dest={{ openldap_server_directory }}/DB_CONFIG
+#     owner=ldap
+#     group=ldap
+#     mode=0600
+#   notify: restart slapd
+
+# Do not use templates
+# - name: Configure OpenLDAP database via OLC (cn=config)
+#   template: src=01-backend.ldif.j2 dest={{ openldap_directory }}/ldifs/01-backend.ldif
+# - name: run ldapmodify
+#   shell: ldapmodify -c -Y EXTERNAL -H ldapi:/// -f 01-backend.ldif
+#   args:
+#     executable: /bin/bash
+#     chdir: "{{ openldap_directory }}/ldifs/"
+
+- name: Configure OpenLDAP database via OLC (cn=config)
+  community.general.ldap_attrs:
+    dn: olcDatabase={2}hdb,cn=config
+    attributes:
+      olcSuffix: "{{ openldap_domain }}"
+      olcRootDN: "cn={{ openldap_manager }},{{ openldap_domain }}"
+      olcRootPW: "{{ rootpwgenerated.stdout }}"
+      olcDbConfig:
+        - set_cachesize 0 {{ openldap_dbconfig_set_cachesize | default(268435456) }} 1
+        - set_lg_regionmax {{ openldap_dbconfig_set_lg_regionmax | default(262144) }}
+        - set_lg_bsize {{ openldap_dbconfig_set_lg_bsize | default(2097152) }}
+    state: exact
+
+- name: Database - add organization entry
+  community.general.ldap_entry:
+    dn: "{{ openldap_domain }}"
+    objectClass:
+      - dcObject
+      - organization
+      - top
+    attributes:
+      o: "{{ organizacao | default('lcc') }}"
+      description:  "Laboratorio Computacao Cientifica - CENAPAD"
+    bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"
+
+- name: Database - add people entry
+  community.general.ldap_entry:
+    dn: "ou=people,{{ openldap_domain }}"
+    objectClass: organizationalUnit
+    attributes:
+      ou: people
+    bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"
+
+- name: Database - add groups entry
+  community.general.ldap_entry:
+    dn: "ou=groups,{{ openldap_domain }}"
+    objectClass: 
+      - organizationalUnit
+      - top
+    attributes:
+      ou: groups
+    bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
+    bind_pw: "{{ openldap_rootpw }}"
+
+# ==== TLS/SASL certificates ====
+
+- name: Generate private key
+  community.crypto.openssl_privatekey:
+    path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    owner: ldap
+    group: ldap
+    backup: yes
+
+- name: Create CSR (Certificate Signing Request)
+  community.crypto.openssl_csr:
+    path: "{{ openldap_dir_certs }}/{{ server_domain }}.csr"
+    privatekey_path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    subject:
+      C: "BR"
+      ST: "Minas Gerais"
+      L: "Belo Horizonte"
+      O: "Universidade Federal de Minas Gerais"
+      OU: "LCC/CENAPAD"
+      emailAddress: "computacaocientifica@lcc.ufmg.br"
+      CN: "{{ server_domain }}"
+    owner: ldap
+    group: ldap
+    backup: True
+
+- name: Create self-signed certificates to use SASL/TLS
+  community.crypto.x509_certificate:
+    privatekey_path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    csr_path: "{{ openldap_dir_certs }}/{{ server_domain }}.csr"
+    path: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
+    provider: selfsigned
+    selfsigned_not_after: "+3650d"
+    owner: ldap
+    group: ldap
+    backup: yes
+
+- name: Change TLS/SSL settings in configuration
+  community.general.ldap_attrs:
+    dn: cn=config
+    attributes:
+      olcTLSCACertificateFile: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
+      olcTLSCertificateFile: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
+      olcTLSCertificateKeyFile: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    state: exact
+
+- name: Restart OpenLDAP service
+  service: name=slapd state=restarted
+
+- name: Return all entries within the 'people' organizational unit.
+  community.general.ldap_search:
+    dn: "ou=people,{{ openldap_domain }}"
+    scope: "onelevel"
+    attrs:
+      - "uidNumber"
+  register: ldap_people_ids
+
+- debug:
+    var: ldap_people_ids

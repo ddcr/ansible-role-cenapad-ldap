@@ -28,14 +28,18 @@ provisioner:
       # callback_plugins: $PWD/../../callback_plugins
       gathering: smart
       # stdout_callback: myyaml
-      display_skipped_hosts: False
+      display_skipped_hosts: Fals
+      # verbosity: 3
   inventory:
     group_vars:
       all:
-        openldap_repos: centos78-lcc
+        # openldap_repos: centos78-lcc
+        openldap_repos: centos78-mirror
 verifier:
   name: ansible
 lint: |
   set -e
   yamllint .
-  ansible-lint .
+  ansible-lint
+  flake8
+

@@ -1,0 +1,33 @@
+---
+# /usr/bin/ldapsearch -Y EXTERNAL -H ldapi:/// -LLL -Q -b "cn=config" -D 
+# "cn={{ openldap_manager }},cn=config" ObjectClass=olcModuleList olcModuleLoad | grep '^olcModuleLoad:.*$'
+# ldapsearch -Y EXTERNAL -Q -LLL -H ldapi:/// -b "cn=module{0},cn=config" 
+# ObjectClass=olcModuleList | grep olcModuleLoad
+
+#
+#  Personal note:
+#  Jinja2 trick used below to form the list of `olcModuleLoad` attribute: 
+#    (a) extract from a list of dict variables (`openldap_overlays`)
+#        the key `name` resulting in a list of strings
+#    (b) Add the extension '.la' to every item of this list
+# 
+- name: Add dynamic modules using OLC (cn-config)
+  community.general.ldap_entry:
+    dn: "cn=module{0},cn=config"
+    objectClass: olcModuleList
+    attributes:
+      cn: module{0}
+      olcModulePath: /usr/lib64/openldap
+      olcModuleLoad: "{{ openldap_overlays | map(attribute='name') | product(['.la']) | map('join') | list }}"
+
+- name: Adding overlay configurations
+  community.general.ldap_entry:
+    dn: "olcOverlay={{ ldap_entry.name }},olcDatabase={2}hdb,cn=config"
+    objectClass: "{{ ldap_entry.objectClass }}"
+    attributes: "{{ ldap_entry.attributes | default(omit) }}"
+    state: "{{ ldap_entry.state | default(omit) }}"
+  loop: "{{ openldap_overlays }}"
+  loop_control:
+    loop_var: ldap_entry
+# bind_dn: "cn={{bindDN}}"
+# bind_pw: "{{bindPW}}"

@@ -1,0 +1,44 @@
+#ansible-configured
+---
+# tasks file for ansible-role-openldap-lcc-cenapad
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/cosine.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/nis.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/inetorgperson.ldif
+
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/eduperson.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/breduperson.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/schac-20061212-1.ldif
+# ldapadd -Y EXTERNAL -H ldapi:/// -f schema/samba.ldif
+- name: "Put all schemas into {{ openldap_directory }}/ldifs directory"
+  copy:
+    src: "files/{{ item }}.ldif"
+    dest: "{{ openldap_directory }}/ldifs"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  with_items: "{{ openldap_schemas }}"
+
+- name: Search Directory for a group of schemas
+  shell: "ldapsearch -QLLL -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config  cn=*{{ item }} dn"
+  register: schema_res
+  with_items: "{{ openldap_schemas }}"
+  ignore_errors: yes
+
+# - name: loop over results
+#   debug:
+#     msg: "MEU ITEM {{ item.item }}"
+#   loop: "{{ schema_res.results }}"
+
+- name: Load the above group of schemas if they re missing
+  command: "ldapadd -Y EXTERNAL -H ldapi:/// -f {{ openldap_directory }}/ldifs/{{ item.item }}.ldif"
+  when: item.stdout == ""
+  loop: "{{ schema_res.results }}"
+  # notify: restart slapd
+
+# - name: Search Directory for cosine schema
+#   shell: "ldapsearch -QLLLY EXTERNAL -H ldapi:/// -b cn=schema,cn=config  cn=*cosine dn"
+#   register: cosine_schema
+
+# - name: Add cosine schema ldif
+#   when: cosine_schema.stdout == ""
+#   notify: restart slapd

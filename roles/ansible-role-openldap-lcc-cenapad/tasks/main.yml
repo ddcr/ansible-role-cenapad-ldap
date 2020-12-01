@@ -32,6 +32,15 @@
       mode: 0755
   tags: createopenldapdir
 
+- name: Add external CentOS repo (in case LCC server is down)
+  yum_repository:
+    name: centos78-mirror
+    description: CentOS 7 - Base
+    baseurl: http://mirror.centos.org/centos/$releasever/os/$basearch/
+    mirrorlist: http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os&infra=$infra
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and openldap_repos == "centos78-mirror"
+  
 - name: Install OpenLDAP packages on RedHat
   yum:
     name: "{{ openldap_rpm_pkgs }}"
@@ -45,4 +54,13 @@
 
 - include: redhat.yml
   when: ansible_os_family == "RedHat"
-  tags: openldapstep2
+
+- include: schemas.yml
+  when: ansible_os_family == "RedHat"
+
+- include: overlays.yml
+  when: ansible_os_family == "RedHat"
+
+- include: users.yml
+  when: ansible_os_family == "RedHat"
+  tags: users

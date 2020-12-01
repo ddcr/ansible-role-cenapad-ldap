@@ -1,14 +1,24 @@
+# {{ ansible_managed }}
 dn: olcDatabase={2}hdb,cn=config
 changetype: modify
 replace: olcSuffix
-olcSuffix: {{ DOMINIO_LDAP }}
+olcSuffix: {{ openldap_domain }}
 
 dn: olcDatabase={2}hdb,cn=config
 changetype: modify
 replace: olcRootDN
-olcRootDN: cn=ldapadm,{{ DOMINIO_LDAP }}
+olcRootDN: cn={{ openldap_manager }},{{ openldap_domain }}
 
 dn: olcDatabase={2}hdb,cn=config
 changetype: modify
 replace: olcRootPW
-olcRootPW: {{ HASH_SENHA_ADM }}
+olcRootPW: {{ rootpwgenerated.stdout }}
+
+dn: olcDatabase={2}hdb,cn=config
+changetype: modify
+add: olcDbConfig
+{% if openldap_dbconfig_set_cachesize %}
+olcDbConfig: set_cachesize 0 {{ openldap_dbconfig_set_cachesize }} 1
+{% endif %}
+olcDbConfig: set_lg_regionmax 262144
+olcDbConfig: set_lg_bsize 2097152

@@ -18,6 +18,9 @@ I found out later that a more elegant way of doing this is using the
 > There are two temporary solutions:
 >  
 > - remove the flag `-s` from the header of `/usr/bin/ansible (#!/usr/bin/python3 -s)`
-> - remove the rpm and install molecule via `pip3 install --user molecule[docker]`
->  (ansible is also installed as a dependency). Probably better to do the same inside
->  a virtualenv.
+> - remove the ansible rpm and install molecule (`pip3 install molecule[docker]`)
+>   inside a python virtualenv (eg. anaconda virtualenv). Ansible will be installed as
+>   a dependency.
+>  
+> I give preference to the second option
+

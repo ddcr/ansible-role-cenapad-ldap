@@ -17,3 +17,6 @@ distributions/
 material/
 roles/ansible-role-openldap/
 roles/open-ldap-installation/
+LDAP.centos_steps.md
+RHEL7-ldap-example.pdf
+test.yml
