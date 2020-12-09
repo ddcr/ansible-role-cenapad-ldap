@@ -13,19 +13,15 @@
     - ansible_facts.services["firewalld.service"]["status"] == "enabled"
     - ansible_facts.services["slapd.service"]["status"] == "enabled"
 
-- name: Set the Open LDAP Server password
-  command: slappasswd -h {{ openldap_password_hash }} -s {{ openldap_rootpw }}
-  register: rootpwgenerated
+- name: Create hashed password for OpenLDAP manager
+  command: slappasswd {{ slappasswd_args }} -s {{ openldap_manager_password }}
+  register: _root_passwd
+  changed_when: _root_passwd.rc != 0
 
-- name: Set password for Shibboleth queries
-  command: slappasswd -h {{ openldap_password_hash }} -s {{ openldap_shibpw }}
-  register: shibpwgenerated
-
-- debug:
-    var: rootpwgenerated
-
-- debug:
-    var: shibpwgenerated
+- name: "Save the manager's hashed passwd as a fact"
+  set_fact:
+    rootpw: "{{ _root_passwd.stdout }}"
+  when: _root_passwd.rc == 0 
 
 - name: Create OpenLDAP server configuration
   template:
@@ -67,12 +63,13 @@
     attributes:
       olcSuffix: "{{ openldap_domain }}"
       olcRootDN: "cn={{ openldap_manager }},{{ openldap_domain }}"
-      olcRootPW: "{{ rootpwgenerated.stdout }}"
+      olcRootPW: "{{ rootpw }}"
       olcDbConfig:
         - set_cachesize 0 {{ openldap_dbconfig_set_cachesize | default(268435456) }} 1
         - set_lg_regionmax {{ openldap_dbconfig_set_lg_regionmax | default(262144) }}
         - set_lg_bsize {{ openldap_dbconfig_set_lg_bsize | default(2097152) }}
     state: exact
+  changed_when: false
 
 - name: Database - add organization entry
   community.general.ldap_entry:
@@ -85,18 +82,18 @@
       o: "{{ organizacao | default('lcc') }}"
       description:  "Laboratorio Computacao Cientifica - CENAPAD"
     bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
+    bind_pw: "{{ openldap_manager_password }}"
 
-- name: Database - add people entry
+- name: Database - Add people entry
   community.general.ldap_entry:
     dn: "ou=people,{{ openldap_domain }}"
     objectClass: organizationalUnit
     attributes:
       ou: people
     bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
+    bind_pw: "{{ openldap_manager_password }}"
 
-- name: Database - add groups entry
+- name: Database - Add groups entry
   community.general.ldap_entry:
     dn: "ou=groups,{{ openldap_domain }}"
     objectClass: 
@@ -105,7 +102,7 @@
     attributes:
       ou: groups
     bind_dn: "cn={{ openldap_manager }},{{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
+    bind_pw: "{{ openldap_manager_password }}"
 
 # ==== TLS/SASL certificates ====
 
@@ -155,13 +152,13 @@
 - name: Restart OpenLDAP service
   service: name=slapd state=restarted
 
-- name: Return all entries within the 'people' organizational unit.
-  community.general.ldap_search:
-    dn: "ou=people,{{ openldap_domain }}"
-    scope: "onelevel"
-    attrs:
-      - "uidNumber"
-  register: ldap_people_ids
+# - name: Return all entries within the 'people' organizational unit.
+#   community.general.ldap_search:
+#     dn: "ou=people,{{ openldap_domain }}"
+#     scope: "onelevel"
+#     attrs:
+#       - "uidNumber"
+#   register: ldap_people_ids
 
-- debug:
-    var: ldap_people_ids
+# - debug:
+#     var: ldap_people_ids

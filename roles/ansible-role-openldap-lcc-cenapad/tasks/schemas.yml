@@ -18,27 +18,14 @@
     mode: "0644"
   with_items: "{{ openldap_schemas }}"
 
-- name: Search Directory for a group of schemas
+- name: Search current schemas through the directory server
   shell: "ldapsearch -QLLL -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config  cn=*{{ item }} dn"
   register: schema_res
   with_items: "{{ openldap_schemas }}"
+  changed_when: schema_res.stdout == ""
   ignore_errors: yes
 
-# - name: loop over results
-#   debug:
-#     msg: "MEU ITEM {{ item.item }}"
-#   loop: "{{ schema_res.results }}"
-
-- name: Load the above group of schemas if they re missing
+- name: Add schemas to cn=schema,cn=config
   command: "ldapadd -Y EXTERNAL -H ldapi:/// -f {{ openldap_directory }}/ldifs/{{ item.item }}.ldif"
   when: item.stdout == ""
   loop: "{{ schema_res.results }}"
-  # notify: restart slapd
-
-# - name: Search Directory for cosine schema
-#   shell: "ldapsearch -QLLLY EXTERNAL -H ldapi:/// -b cn=schema,cn=config  cn=*cosine dn"
-#   register: cosine_schema
-
-# - name: Add cosine schema ldif
-#   when: cosine_schema.stdout == ""
-#   notify: restart slapd

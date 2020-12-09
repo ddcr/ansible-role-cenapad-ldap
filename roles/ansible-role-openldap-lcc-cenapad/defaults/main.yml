@@ -24,14 +24,12 @@ openldap_rpm_pkgs:
 #
 openldap_domain: "dc=ufmg,dc=br"
 server_domain: "lcc.ufmg.br"
-openldap_password_hash: "{SSHA}"
+slappasswd_args: -h "{SSHA}"
+# slappasswd_args: -h "{SSHA512}" -o module-load=pw-sha2.la
 #
 openldap_manager: ldapadm
-openldap_admin_user: admin
-openldap_rootpw: veredas_lcc
-openldap_shib_user: leitor-shib
-openldap_shibpw: veredas_shib
-
+openldap_manager_password: veredas
+#
 # /etc/sysconfig/slapd:   defines the default ports 
 # for LDAP, LDAPS (secured LDAP) and LDAPI
 # (Interconnect = Unix Sockect)
@@ -86,3 +84,21 @@ openldap_overlays:
         - member
         - manager
         - owner
+#
+# groups and special users
+#
+ldap_groups_users_list:
+  - groupname: admins
+    acl: "by group.base=\"cn=admin, ou=groups, {{ openldap_domain }}\" write"
+    users:
+      - username: admin
+        password: "veredas1"
+        gecos: "Administrador da base LDAP"
+        acl: "by dn.base=\"cn=admin, {{ openldap_domain }}\" write"
+  - groupname: leitores
+    acl: "by group.base=\"cn=leitores, ou=groups, {{ openldap_domain }}\" read"
+    users:
+      - username: leitor-shib
+        password: "veredas3"
+        gecos: "Leitor da base para o Shibboleth"
+        acl: "by dn.base=\"cn=leitor-shib, {{ openldap_domain }}\" read"

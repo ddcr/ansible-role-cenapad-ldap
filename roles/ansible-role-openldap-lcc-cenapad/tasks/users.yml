@@ -1,38 +1,75 @@
 ---
-- name: Add LDAP user administrator
+- name: Get list of special LDAP users 
+  set_fact: 
+    userlist: "{{ ldap_groups_users_list | map(attribute='users') | flatten | map(attribute='username') | join(', ') }}"
+
+- name: "Generate userPassword values for users: {{ userlist }}"
+  command: slappasswd {{ slappasswd_args }} -s {{ item.1.password }}
+  with_subelements:
+    - "{{ ldap_groups_users_list }}"
+    - users
+  register: pwhashes
+  changed_when: pwhashes.rc != 0
+  when: ldap_groups_users_list is defined
+
+- name: "Add LDAP users: {{ userlist }}"
   community.general.ldap_entry:
-    dn: "cn={{ openldap_admin_user }}, {{ openldap_domain }}"
+    dn: "cn={{ item.item[1].username }}, {{ openldap_domain }}"
     objectClass:
       - simpleSecurityObject
       - organizationalRole
     attributes:
-      cn: "{{ openldap_admin_user }}"
-      description: "Administrador da base LDAP"
-      userPassword: "{{ rootpwgenerated.stdout }}"
+      cn: "{{ item.item[1].username }}"
+      description: "{{ item.item[1].gecos | default(omit) }}"
+      userPassword: "{{ item.stdout }}"
     bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
+    bind_pw: "{{ openldap_manager_password }}"
+  with_items: "{{ pwhashes.results }}"
+  loop_control:
+    label: "{{ item.item[1].username }}, {{ openldap_domain }}"
 
-- name: Add Shibboleth (IdP) user reader
+- name: Create LDAP member groups {{ ldap_groups_users_list | map(attribute='groupname') | join(', ') }}
   community.general.ldap_entry:
-    dn: "cn={{ openldap_shib_user }}, {{ openldap_domain }}"
-    objectClass:
-      - simpleSecurityObject
-      - organizationalRole
-    attributes:
-      cn: "{{ openldap_shib_user }}"
-      description: "Administrador da base LDAP"
-      userPassword: "{{ shibpwgenerated.stdout }}"
-    bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
-
-- name: "Create for now the groups: {{ openldap_groups | join(',') }}"
-  community.general.ldap_entry:
-    dn: "cn=leitor-shib, {{ openldap_domain }}"
+    dn: "cn={{ item.groupname }},ou=groups,{{ openldap_domain }}"
     objectClass:
       - groupofnames
       - top
     attributes:
-      cn: leitor-shib
-      member: 
+      cn: "{{ item.groupname }}"
+      member: "{{ item.users | map(attribute='username') | map( 'regex_replace', '^(.*)$', 'cn=\\1,' + openldap_domain ) | list }}"
     bind_dn: "cn={{ openldap_manager }}, {{ openldap_domain }}"
-    bind_pw: "{{ openldap_rootpw }}"
+    bind_pw: "{{ openldap_manager_password }}"
+  with_items: "{{ ldap_groups_users_list }}"
+
+- name: Prepare ACL rules for special groups/users
+  set_fact:
+    u_acls: "{{ ldap_groups_users_list | map(attribute='users') | flatten | map(attribute='acl') | join('\n') }}"
+    g_acls: "{{ ldap_groups_users_list | map(attribute='acl') | join('\n') }}"
+
+- name: Set up the Access Control Lists (ACLs)
+  community.general.ldap_attrs:
+    dn: olcDatabase={2}hdb,cn=config
+    attributes:
+      olcAccess:
+        - >-
+          to attrs=userPassword,shadowLastChange
+          {{ u_acls }}
+          {{ g_acls }}
+          by self write
+          by anonymous auth
+          by * none
+        - >-
+          to dn.regex="^uid=([^,]+),ou=people,{{ openldap_domain }}$" 
+          {{ u_acls }}
+          {{ g_acls }}
+          by * none
+        - >-
+          to dn.base="" 
+          by * read 
+        - >-
+          to * 
+          {{ u_acls }}
+          {{ g_acls }}
+          by * none 
+    ordered: yes
+    state: exact
