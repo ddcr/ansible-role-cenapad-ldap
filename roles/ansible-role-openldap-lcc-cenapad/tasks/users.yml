@@ -1,6 +1,6 @@
 ---
-- name: Get list of special LDAP users 
-  set_fact: 
+- name: Get list of special LDAP users
+  set_fact:
     userlist: "{{ ldap_groups_users_list | map(attribute='users') | flatten | map(attribute='username') | join(', ') }}"
 
 - name: "Generate userPassword values for users: {{ userlist }}"
@@ -59,17 +59,17 @@
           by anonymous auth
           by * none
         - >-
-          to dn.regex="^uid=([^,]+),ou=people,{{ openldap_domain }}$" 
+          to dn.regex="^uid=([^,]+),ou=people,{{ openldap_domain }}$"
           {{ u_acls }}
           {{ g_acls }}
           by * none
         - >-
-          to dn.base="" 
-          by * read 
+          to dn.base=""
+          by * read
         - >-
-          to * 
+          to *
           {{ u_acls }}
           {{ g_acls }}
-          by * none 
+          by * none
     ordered: yes
     state: exact

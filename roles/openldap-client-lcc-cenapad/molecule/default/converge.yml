@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include openldap-client-lcc-cenapad"
+      include_role:
+        name: "openldap-client-lcc-cenapad"

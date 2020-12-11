@@ -21,7 +21,7 @@
 - name: "Save the manager's hashed passwd as a fact"
   set_fact:
     rootpw: "{{ _root_passwd.stdout }}"
-  when: _root_passwd.rc == 0 
+  when: _root_passwd.rc == 0
 
 - name: Create OpenLDAP server configuration
   template:
@@ -96,7 +96,7 @@
 - name: Database - Add groups entry
   community.general.ldap_entry:
     dn: "ou=groups,{{ openldap_domain }}"
-    objectClass: 
+    objectClass:
       - organizationalUnit
       - top
     attributes:
@@ -108,15 +108,15 @@
 
 - name: Generate private key
   community.crypto.openssl_privatekey:
-    path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.key"
     owner: ldap
     group: ldap
     backup: yes
 
-- name: Create CSR (Certificate Signing Request)
+- name: Create server CSR (Certificate Signing Request)
   community.crypto.openssl_csr:
-    path: "{{ openldap_dir_certs }}/{{ server_domain }}.csr"
-    privatekey_path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+    path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.csr"
+    privatekey_path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.key"
     subject:
       C: "BR"
       ST: "Minas Gerais"
@@ -124,16 +124,16 @@
       O: "Universidade Federal de Minas Gerais"
       OU: "LCC/CENAPAD"
       emailAddress: "computacaocientifica@lcc.ufmg.br"
-      CN: "{{ server_domain }}"
+      CN: "{{ ansible_fqdn }}"
     owner: ldap
     group: ldap
     backup: True
 
-- name: Create self-signed certificates to use SASL/TLS
+- name: Create self-signed server certificate to use SASL/TLS
   community.crypto.x509_certificate:
-    privatekey_path: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
-    csr_path: "{{ openldap_dir_certs }}/{{ server_domain }}.csr"
-    path: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
+    privatekey_path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.key"
+    csr_path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.csr"
+    path: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.crt"
     provider: selfsigned
     selfsigned_not_after: "+3650d"
     owner: ldap
@@ -144,21 +144,10 @@
   community.general.ldap_attrs:
     dn: cn=config
     attributes:
-      olcTLSCACertificateFile: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
-      olcTLSCertificateFile: "{{ openldap_dir_certs }}/{{ server_domain }}.crt"
-      olcTLSCertificateKeyFile: "{{ openldap_dir_certs }}/{{ server_domain }}.key"
+      olcTLSCACertificateFile: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.crt"
+      olcTLSCertificateFile: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.crt"
+      olcTLSCertificateKeyFile: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.key"
     state: exact
 
 - name: Restart OpenLDAP service
   service: name=slapd state=restarted
-
-# - name: Return all entries within the 'people' organizational unit.
-#   community.general.ldap_search:
-#     dn: "ou=people,{{ openldap_domain }}"
-#     scope: "onelevel"
-#     attrs:
-#       - "uidNumber"
-#   register: ldap_people_ids
-
-# - debug:
-#     var: ldap_people_ids

@@ -40,7 +40,7 @@
     mirrorlist: http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os&infra=$infra
     gpgcheck: no
   when: ansible_os_family == "RedHat" and openldap_repos == "centos78-mirror"
-  
+
 - name: Install OpenLDAP packages on RedHat
   yum:
     name: "{{ openldap_rpm_pkgs }}"

@@ -1,7 +1,5 @@
 ---
-
 # - name: restart slapd
-  # TODO
+# TODO
 - name: restart slapd
   service: name=slapd state=restarted
-

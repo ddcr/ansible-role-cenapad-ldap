@@ -22,10 +22,12 @@
   shell: "ldapsearch -QLLL -Y EXTERNAL -H ldapi:/// -b cn=schema,cn=config  cn=*{{ item }} dn"
   register: schema_res
   with_items: "{{ openldap_schemas }}"
-  changed_when: schema_res.stdout == ""
+  changed_when: not schema_res.stdout
   ignore_errors: yes
+# changed_when: schema_res.stdout == ''
 
 - name: Add schemas to cn=schema,cn=config
   command: "ldapadd -Y EXTERNAL -H ldapi:/// -f {{ openldap_directory }}/ldifs/{{ item.item }}.ldif"
-  when: item.stdout == ""
+  when: not item.stdout
   loop: "{{ schema_res.results }}"
+# when: item.stdout == ''

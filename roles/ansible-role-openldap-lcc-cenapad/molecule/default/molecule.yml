@@ -4,7 +4,7 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: veredas-ldap-container
+  - name: veredas-ldap-server
     image: ddcr/centos-ldap:latest
     tmpfs:
       - /run
@@ -28,18 +28,19 @@ provisioner:
       # callback_plugins: $PWD/../../callback_plugins
       gathering: smart
       # stdout_callback: myyaml
-      display_skipped_hosts: Fals
+      display_skipped_hosts: False
       # verbosity: 3
   inventory:
     group_vars:
       all:
-        # openldap_repos: centos78-lcc
+        openldap_repos: centos78-mirror
+    host_vars:
+      all:
         openldap_repos: centos78-mirror
 verifier:
   name: ansible
 lint: |
   set -e
   yamllint .
-  ansible-lint
+  ansible-lint .
   flake8
-
