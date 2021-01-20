@@ -1,2 +1,16 @@
 ---
 # defaults file for openldap-client-lcc-cenapad
+openldap_directory: "/openldap"
+openldap_server_directory: /var/lib/ldap
+openldap_dir_certs: /etc/openldap/certs
+openldap_repos:
+  - centos78-lcc
+  - rocks-centos7-os-lcc
+  - rocks-centos7-os-lcc-updates
+openldap_rpm_pkgs:
+  - openldap
+  - compat-openldap
+  - openldap-clients
+  - nss-pam-ldapd
+  - migrationtools
+#

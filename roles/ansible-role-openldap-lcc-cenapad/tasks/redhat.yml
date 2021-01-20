@@ -33,8 +33,8 @@
     backup: True
   notify: restart slapd
 
-- name: Ensure OpenLDAP service is started and enabled on boot
-  service: name=slapd state=started enabled=yes
+# - name: Ensure OpenLDAP service is started and enabled on boot
+#   service: name=slapd state=started enabled=yes
 
 #
 # Should consider using mdb (Memory-Mapped DB backend) backend?
@@ -149,5 +149,5 @@
       olcTLSCertificateKeyFile: "{{ openldap_dir_certs }}/{{ ansible_fqdn }}.key"
     state: exact
 
-- name: Restart OpenLDAP service
-  service: name=slapd state=restarted
+# - name: Restart OpenLDAP service
+#   service: name=slapd state=restarted

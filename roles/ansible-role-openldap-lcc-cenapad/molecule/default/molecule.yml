@@ -2,10 +2,12 @@
 dependency:
   name: galaxy
 driver:
-  name: docker
+  # name: docker
+  name: podman
 platforms:
   - name: veredas-ldap-server
-    image: ddcr/centos-ldap:latest
+    # image: ddcr/centos-ldap:latest
+    image: localhost/centos/ldap:7.8.2003
     tmpfs:
       - /run
       - /tmp

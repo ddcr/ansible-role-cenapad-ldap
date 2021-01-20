@@ -1,2 +1,21 @@
 ---
 # tasks file for openldap-client-lcc-cenapad
+- name: Add external CentOS repo (in case LCC server is down)
+  yum_repository:
+    name: centos78-mirror
+    description: CentOS 7 - Base
+    baseurl: http://mirror.centos.org/centos/$releasever/os/$basearch/
+    mirrorlist: http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os&infra=$infra
+    gpgcheck: no
+  when: ansible_os_family == "RedHat" and openldap_repos == "centos78-mirror"
+
+- name: Install OpenLDAP packages on RedHat
+  yum:
+    name: "{{ openldap_rpm_pkgs }}"
+    state: present
+    disablerepo: "*"
+    enablerepo: "{{ openldap_repos }}"
+  notify: restart slapd
+  tags:
+    - openldapinitialinstall
+  when: ansible_os_family == "RedHat"

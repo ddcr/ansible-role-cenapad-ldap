@@ -1,0 +1,18 @@
+dn: uid=00123456,ou=people,${DOMINIO_LDAP}
+objectClass: person
+objectClass: inetOrgPerson
+objectClass: brPerson
+objectClass: schacPersonalCharacteristics
+objectClass: sambaSamAccount
+objectclass: brEduPerson
+uid: 00123456
+brcpf: 12345678900
+brpassport: A23456
+schacCountryOfCitizenship: Brazil
+telephoneNumber: +55 12 34567890
+mail: joao.silva@gmail.com
+cn: Joao
+sn: Silva
+userPassword: ${HASH_SENHA_USR}
+schacDateOfBirth: 20181030
+sambaSID: S-1-5-21-${RANDOM}-${RANDOM}-${RANDOM}-1102

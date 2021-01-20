@@ -1,12 +1,17 @@
-FROM centos/systemd
+FROM localhost/centos/systemd:7.8.2003
 LABEL maintainer="Domingos Rodrigues <ddcr@lcc.ufmg.br>"
 
-COPY *_repos.repo /etc/yum.repos.d/
+# COPY *_repos.repo /etc/yum.repos.d/
 
 # install LDAP rpms
-RUN yum update --disablerepo='*' --enablerepo='centos78-lcc' -y \
-    && yum makecache fast \
-    && yum install --disablerepo='*' --enablerepo='centos78-lcc' -y \
+
+# RUN yum update --disablerepo='*' --enablerepo='centos78-lcc' -y \
+#     && yum makecache fast \
+#     && yum install --disablerepo='*' --enablerepo='centos78-lcc' -y \
+
+# RUN yum update -y \
+#     && yum makecache fast \
+RUN yum install -y \
     openldap compat-openldap openldap-clients \
     openldap-servers openldap-servers-sql \
     unixODBC cyrus-sasl-devel openldap-devel \
