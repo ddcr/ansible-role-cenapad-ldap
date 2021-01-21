@@ -16,7 +16,8 @@ platforms:
     capabilities:
       - SYS_ADMIN
     command: "/usr/sbin/init"
-    privileged: true
+    # with podman 2 cannot have both 'privileged' and 'capabilities' options together
+    privileged: false
     tty: True
     exposed_ports:
       - 389/tcp
